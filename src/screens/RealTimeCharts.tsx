@@ -1,14 +1,15 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   Image,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
 } from 'react-native';
-import {LineChart, YAxis} from 'react-native-svg-charts';
-import {useNavigation} from '@react-navigation/native';
+import { LineChart, YAxis, Grid } from 'react-native-svg-charts';
+import * as shape from 'd3-shape';
+import { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
 
 interface Currency {
   name: string;
@@ -26,7 +27,7 @@ interface RouteParams {
   selectedCurrency: Currency;
 }
 
-const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
+const CurrencyDetailsScreen: React.FC<{ route: { params: RouteParams } }> = ({
   route,
 }) => {
   const selectedCurrency = route.params.selectedCurrency;
@@ -35,9 +36,41 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
 
   const initialPrice = selectedCurrency.current_price;
 
-  const data = Array.from({length: 11}, (_, index) => {
-    return initialPrice * (1 + (index % priceChangePercentage24h));
-  });
+  const [selectedInterval, setSelectedInterval] = useState('24H');
+
+  const handleIntervalPress = (interval: string) => {
+    setSelectedInterval(interval);
+  };
+
+  const calculateData = (interval: string): number[] => {
+    // Logic to calculate data based on the selected interval
+    // For simplicity, returning dummy data
+    switch (interval) {
+      case '1W':
+        return Array.from({ length: 8 }, (_, index) => {
+          return initialPrice * (1 + (index % priceChangePercentage24h));
+        });
+      case '1M':
+        return Array.from({ length: 31 }, (_, index) => {
+          return initialPrice * (1 + (index % priceChangePercentage24h));
+        });
+      case '1Y':
+        return Array.from({ length: 366 }, (_, index) => {
+          return initialPrice * (1 + (index % priceChangePercentage24h));
+        });
+      case 'ALL':
+        return Array.from({ length: 100 }, (_, index) => {
+          return initialPrice * (1 + (index % priceChangePercentage24h));
+        });
+      default:
+        // Default to 24H
+        return Array.from({ length: 25 }, (_, index) => {
+          return initialPrice * (1 + (index % priceChangePercentage24h));
+        });
+    }
+  };
+
+  const data: number[] = calculateData(selectedInterval);
 
   let strokeColor;
   if (priceChangePercentage24h > 5) {
@@ -54,17 +87,22 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
 
   const intervals = ['24H', '1W', '1M', '1Y', 'ALL'];
 
-  const [selectedInterval, setSelectedInterval] = useState(intervals[0]);
-
-  const handleIntervalPress = (interval: string) => {
-    setSelectedInterval(interval);
-  };
-
   const navigation = useNavigation();
 
   const formatYAxisLabel = (value: number) => {
     return value.toLocaleString();
   };
+
+  const Gradient = ({ line }) => (
+    <Path
+      d={line}
+      fill="none"
+      stroke={strokeColor}
+      strokeWidth={2}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+  );
 
   return (
     <View style={styles.container}>
@@ -73,7 +111,7 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
           <Image source={require('../assets/arrow.png')} style={styles.arrow} />
         </TouchableOpacity>
         <View style={styles.currencyInfo}>
-          <Image source={{uri: selectedCurrency.image}} style={styles.image} />
+          <Image source={{ uri: selectedCurrency.image }} style={styles.image} />
           <Text style={styles.currencySymbol}>
             {selectedCurrency.symbol.toUpperCase()}
           </Text>
@@ -86,7 +124,7 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
         </Text>
         <Text style={styles.price}>
           {selectedCurrency.current_price.toLocaleString()}{' '}
-          <Text style={{fontSize: 12}}>EUR </Text>
+          <Text style={{ fontSize: 12 }}>EUR </Text>
         </Text>
         <View style={styles.details}>
           <Text style={styles.detailValue}>{priceChangePercentage24h} EUR</Text>
@@ -94,7 +132,7 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
             {selectedCurrency.market_cap
               ? (selectedCurrency.market_cap / 1000000000).toLocaleString(
                   'en-US',
-                  {maximumFractionDigits: 2},
+                  { maximumFractionDigits: 2 },
                 ) + '%'
               : 'N/A'}
           </Text>
@@ -103,33 +141,27 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
         <View style={styles.chartContainer}>
           <View style={styles.chart}>
             <LineChart
-              style={{flex: 1}}
+              style={{ flex: 1 }}
               data={data}
-              svg={{stroke: strokeColor, strokeWidth: 2}}
-              contentInset={{top: 20, bottom: 20}}
-            />
-            <LineChart
-              style={StyleSheet.absoluteFill}
-              data={data}
-              svg={{
-                stroke: strokeColor,
-                strokeWidth: 3,
-                strokeOpacity: priceChangePercentage24h < 0 ? 0.6 : 1,
-                shadowColor: 'black',
-                shadowOffset: {width: 0, height: 4},
-                shadowOpacity: priceChangePercentage24h < 0 ? 0.5 : 0,
-                shadowRadius: 6,
-              }}
-              contentInset={{top: 20, bottom: 20}}
-            />
+              svg={{ stroke: strokeColor, strokeWidth: 2 }}
+              contentInset={{ top: 20, bottom: 20 }}
+              curve={shape.curveNatural}
+            >
+              <Defs key={'gradient'}>
+                <LinearGradient id={'gradient'} x1={'0%'} y={'0%'} x2={'0%'} y2={'100%'}>
+                  <Stop offset={'0%'} stopColor={strokeColor} stopOpacity={0.8} />
+                  <Stop offset={'100%'} stopColor={strokeColor} stopOpacity={0.2} />
+                </LinearGradient>
+              </Defs>
+              <Gradient />
+            </LineChart>
             <YAxis
               data={data}
-              contentInset={{top: 20, bottom: 20}}
-              svg={{fontSize: 10, fill: 'grey'}}
+              contentInset={{ top: 20, bottom: 20 }}
+              svg={{ fontSize: 10, fill: 'grey' }}
               numberOfTicks={5}
               formatLabel={formatYAxisLabel}
-              yAxisId={1}
-              style={{position: 'absolute', top: 0, bottom: 0, right: 0}}
+              style={{ position: 'absolute', top: 0, bottom: 0, right: 0 }}
             />
           </View>
         </View>
@@ -139,18 +171,10 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
               key={interval}
               style={[
                 styles.intervalItem,
-                selectedInterval === interval && {color: 'purple'},
+                selectedInterval === interval && {  },
               ]}
               onPress={() => handleIntervalPress(interval)}>
-              <Text
-                style={[
-                  styles.intervalText,
-                  selectedInterval === interval && {
-                    color: 'purple',
-                    fontWeight: '600',
-                    borderRadius: 5,
-                  },
-                ]}>
+              <Text style={[styles.intervalText, selectedInterval === interval && { color: 'purple', fontWeight:'500'}]}>
                 {interval}
               </Text>
             </TouchableOpacity>
@@ -160,6 +184,7 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
       <View style={styles.marketDataContainer}>
         <Text style={styles.marketDataTitle}>Market data</Text>
         <View style={styles.marketData}>
+        <Text style={styles.marketDataTitle2}>Market data</Text>
           <View style={styles.marketDataItem}>
             <Text style={styles.marketDataLabel}>Market rank</Text>
             <Text style={styles.marketDataValue}>
@@ -168,7 +193,7 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
           </View>
           <View style={styles.marketDataItem}>
             <Text style={styles.marketDataLabel}>Market dominance</Text>
-            <Text style={styles.marketDataValue}>
+            <Text  style={styles.marketDataValue}>
               {selectedCurrency.market_cap_percentage || 'N/A'}
             </Text>
           </View>
@@ -199,7 +224,7 @@ const CurrencyDetailsScreen: React.FC<{route: {params: RouteParams}}> = ({
           <Text
             style={[
               styles.marketDataChange,
-              {color: selectedCurrency.current_price > 0 ? 'green' : 'red'},
+              { color: selectedCurrency.current_price > 0 ? 'green' : 'red' },
             ]}>
             +{selectedCurrency.current_price}%
           </Text>
@@ -308,6 +333,11 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: '500',
   },
+  marketDataTitle2: {
+    marginTop: 5,
+    color: 'black',
+    fontWeight: '500',
+  },
   marketData: {
     marginTop: 20,
     borderRadius: 5,
@@ -339,3 +369,4 @@ const styles = StyleSheet.create({
 });
 
 export default CurrencyDetailsScreen;
+

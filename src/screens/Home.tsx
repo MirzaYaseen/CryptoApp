@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Image, ImageSourcePropType } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Image, ImageSourcePropType, Modal } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCurrencies } from '../redux/actions/currencyActions';
 import { useNavigation } from '@react-navigation/native';
@@ -21,10 +21,25 @@ const HomeScreen: React.FC = () => {
   const loading: boolean = useSelector((state: any) => state.currency.loading);
   const error: string | null = useSelector((state: any) => state.currency.error);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filteredCurrencies, setFilteredCurrencies] = useState<Currency[]>([]);
+  const [sortedCurrencies, setSortedCurrencies] = useState<Currency[]>([]);
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState<string>('price_lowest');
 
   useEffect(() => {
     dispatch(fetchCurrencies());
   }, [dispatch]);
+
+  useEffect(() => {
+    setSortedCurrencies(currencies);
+  }, [currencies]);
+
+  useEffect(() => {
+    const filtered = currencies.filter(currency =>
+      currency.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredCurrencies(filtered);
+  }, [searchQuery, currencies]);
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -34,9 +49,37 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('RealTimeCharts', { selectedCurrency });
   };
 
-  const filteredCurrencies: Currency[] = currencies.filter((currency) =>
-    currency.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const openModal = () => {
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  const sortByPriceLowest = () => {
+    const sorted = [...filteredCurrencies].sort((a, b) => a.current_price - b.current_price);
+    setSortedCurrencies(sorted);
+    setSortBy('price_lowest');
+    setShowModal(false);
+  };
+
+  const sortByPriceHighest = () => {
+    const sorted = [...filteredCurrencies].sort((a, b) => b.current_price - a.current_price);
+    setSortedCurrencies(sorted);
+    setSortBy('price_highest');
+    setShowModal(false);
+  };
+
+  const sortByPopularity = () => {
+    // Sort currencies based on popularity (you need to define a metric for popularity)
+    // For example, you can sort by the number of searches or transactions
+    // This example sorts randomly
+    const sorted = [...filteredCurrencies].sort(() => Math.random() - 0.5);
+    setSortedCurrencies(sorted);
+    setSortBy('popularity');
+    setShowModal(false);
+  };
 
   if (loading) {
     return <Text>Loading...</Text>;
@@ -66,12 +109,14 @@ const HomeScreen: React.FC = () => {
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10 }}>
         <Text style={{ fontSize: 16, color: 'black' }}>Popular</Text>
-        <Text style={{ fontSize: 14, color: 'grey' }}>Price</Text>
+        <TouchableOpacity onPress={openModal}>
+          <Text style={{ fontSize: 14, color: 'grey', textDecorationLine: 'underline' }}>Price</Text>
+        </TouchableOpacity>
       </View>
       <FlatList
         showsVerticalScrollIndicator={false}
         style={{ marginTop: 10 }}
-        data={filteredCurrencies}
+        data={sortedCurrencies}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => goToCurrencyDetails(item)}>
@@ -85,22 +130,43 @@ const HomeScreen: React.FC = () => {
           </TouchableOpacity>
         )}
       />
+
+      <Modal visible={showModal} animationType="slide" transparent>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sort by:</Text>
+            <TouchableOpacity style={styles.modalButton} onPress={sortByPriceLowest}>
+              <Text style={{color:'black'}}>Price (Lowest to Highest)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalButton} onPress={sortByPriceHighest}>
+              <Text style={{color:'black'}}>Price (Highest to Lowest)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalButton} onPress={sortByPopularity}>
+              <Text style={{color:'black'}}>Popularity</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalButton, { backgroundColor: 'lightgrey' }]} onPress={closeModal}>
+              <Text style={{color:'red'}}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
-    backgroundColor: 'white'
+    backgroundColor: 'white',
   },
   text: {
     textAlign: 'center',
     fontSize: 20,
     color: 'black',
     fontWeight: '400',
-    marginTop: 10
+    marginTop: 10,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -111,16 +177,37 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 15,
     width: '95%',
-    alignSelf: 'center'
-  },
-  searchIcon: {
-    marginRight: 10,
+    alignSelf: 'center',
   },
   input: {
     height: 40,
     flex: 1,
     paddingLeft: 10,
-    color: 'grey'
+    color: 'grey',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    color: 'black',
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalButton: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'lightgrey',
   },
 });
 
