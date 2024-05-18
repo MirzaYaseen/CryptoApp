@@ -144,7 +144,7 @@ const HomeScreen: React.FC = () => {
             <TouchableOpacity style={styles.modalButton} onPress={sortByPopularity}>
               <Text style={{color:'black'}}>Popularity</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.modalButton, { backgroundColor: 'lightgrey' }]} onPress={closeModal}>
+            <TouchableOpacity style={[styles.modalButton]} onPress={closeModal}>
               <Text style={{color:'red'}}>Cancel</Text>
             </TouchableOpacity>
           </View>
