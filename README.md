@@ -1,8 +1,8 @@
 # App_View
 
-![Bit1](https://github.com/MirzaYaseen/CryptoApp/assets/85738256/1d5c96b5-64cc-4d4d-a4bd-5ed9d16e6b73)
+![image](https://github.com/MirzaYaseen/CryptoApp/assets/85738256/63d4e70d-348a-4ed9-8ace-9592018e346d)
 
-![Bit2](https://github.com/MirzaYaseen/CryptoApp/assets/85738256/eae2b981-13af-4f49-9c17-f0a28782757b)
+![image](https://github.com/MirzaYaseen/CryptoApp/assets/85738256/664bd014-e82e-4a9c-9ecb-6edfaaf278a6)
 
 
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
